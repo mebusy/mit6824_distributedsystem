@@ -47,19 +47,19 @@ TC          A        B
 ---prepare-->
 <----yes/no--
 ------------prepare-->  LOG 
-<-------------yes/no--
-
-----commit-->
-<-------ack--
--------------commit-->
-<---------------ack--
+<-------------yes/no--      _ 
+                            |
+----commit-->               |-- TIMEOUT-BLOCK
+<-------ack--               |
+-------------commit-->      -
+<---------------ack--       
 ```
 
 - Question
     1. what if B crashes after receiving prepare message, before sending the yes ?
+        - B can easily abort the transaction
     2. what if B crashes after receiving commit message ?
         - A do its part of the transation and make it permanent
-            - B can easily abort the transaction
         - we're absolutedly required B that on recovery it be still prepared to complete its part of the transaction 
             - at that point whether B doesn't know whether it should commit or not , because it actually didn't receive the commit message.
         - that means the fact that we can't lose the state for a transaction across crashes and reboots.
@@ -67,10 +67,17 @@ TC          A        B
                 - this sort of intermediate transaction state, the memory of all of the changes that's made which may have to be undone if there's an abort , 
                 - PLUS, the record of all the locks the transactions held.
             - it's almost always in a log on disk
+    3. what if B crashes before receiving the commit, or after , or might crash after actually committing ?
+    4. what if TC failed ?
+        - where things start getting critical is if any party might have commited, then we cannot forget about that.
+        - if either of these participants have committed, or if the transaction coordinator might have aplied to the client, then we cannot have that transation go away, 
+        - if the TC sent out a commit message to A, but hadn't gotten around to sending a commit to B, and it crashed at that point. THe TC must be prepared on restart to resend the commit messages to make sure that both parties know that the transaction is committed.
+        - if TC crashes before sending the commit message, it can just abort the transaction.
+            - anyways, it need LOG the transaction states before starting sending commit.
+    5. When does TC can forget the transaction log ?
+        - after it receiving all ACKs.
 
-
-
-
+- Two-Phase commit you really only see it within relatively small domains, within a single machine room, within a single organization,  you don't see it for example did you transfers between different banks, you might possibly see it within a bank if it's sharded its database  but you would never see Two-Phase commit can it run between organizations that physically separated.
 
 
 
