@@ -56,6 +56,25 @@ func main() {
 }
 ```
 
+Anyways you can simply solve it:
+
+```go
+func main() {
+    // log.Println("hahaha")
+    arr := []string{ "a","b", "c" }
+    var done sync.WaitGroup
+    for _, v := range(arr) {
+        done.Add(1)
+        go func( v1 string ) {
+            defer done.Done()
+            time.Sleep( time.Second )
+            log.Println( v1 )
+        }(v) // value copy here
+    }
+    done.Wait()
+}
+```
+
 
 
 
